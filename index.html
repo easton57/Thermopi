@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thermostat Control</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <!-- Schedule Spreadsheet and Entry Fields -->
+            <div class="col-md-6 text-center">
+                <!-- Current Temperature Display -->
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <h3>Current Temperature</h3>
+                        <div id="currentTemperatureText">21°C</div>
+                    </div>
+                </div>
+
+                <!-- Temperature Controls -->
+                <div class="row">
+                    <!-- Min Temperature Controls -->
+                    <div class="col-md-6 text-center">
+                        <h3>Min Temperature</h3>
+                        <button class="btn btn-secondary mb-2" id="minTempUpButton">+</button>
+                        <div id="minTemperatureText">18°C</div>
+                        <button class="btn btn-secondary mt-2" id="minTempDownButton">-</button>
+                    </div>
+
+                    <!-- Max Temperature Controls -->
+                    <div class="col-md-6 text-center">
+                        <h3>Max Temperature</h3>
+                        <button class="btn btn-secondary mb-2" id="maxTempUpButton">+</button>
+                        <div id="maxTemperatureText">22°C</div>
+                        <button class="btn btn-secondary mt-2" id="maxTempDownButton">-</button>
+                    </div>
+                </div>
+
+                <!-- Control Buttons -->
+                <div class="row mt-4">
+                    <div class="col-4">
+                        <button class="btn btn-success" id="setTemperaturesButton">Set Temperatures</button>
+                    </div>
+                    <div class="col-4">
+                        <button class="btn btn-warning" id="toggleFanButton">Toggle Fan</button>
+                    </div>
+                    <div class="col-4">
+                        <button class="btn btn-info" id="toggleUnitButton">Switch to Fahrenheit</button>
+                    </div>
+                </div>
+
+                <div class="row mt-4">
+                    <h3>Schedule</h3>
+                    
+                    <!-- Schedule Table -->
+                    <table class="table table-bordered mb-3" id="scheduleTable">
+                        <thead>
+                            <tr>
+                                <th>Schedule ID</th>
+                                <th>Start Time</th>
+                                <th>Min Temp</th>
+                                <th>Max Temp</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Dynamic rows will be added here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Entry Fields Row -->
+                <div class="row mb-3">
+                    <div class="col-4">
+                        <label for="startTime" class="form-label">Start Time</label>
+                        <input type="time" class="form-control" id="startTime">
+                    </div>
+                    <div class="col-4">
+                        <label for="minTemp" class="form-label">Min Temp</label>
+                        <input type="number" class="form-control" id="minTemp" value="18">
+                    </div>
+                    <div class="col-4">
+                        <label for="maxTemp" class="form-label">Max Temp</label>
+                        <input type="number" class="form-control" id="maxTemp" value="22">
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="mb-3">
+                    <button class="btn btn-primary" id="saveButton">Save</button>
+                </div>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" placeholder="Enter Schedule ID to Remove" id="removeScheduleId">
+                    <button class="btn btn-danger" id="removeButton">Remove</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let celsius = true;
+        const baseUrl = 'https://48f7601c-126e-4a94-b835-87f4b131f889.mock.pstmn.io';
+    
+        function updateTemperatureDisplay() {
+            const currentTempElem = document.getElementById('currentTemperatureText');
+            const maxTempElem = document.getElementById('maxTemperatureText');
+            const minTempElem = document.getElementById('minTemperatureText');
+            
+            let currentTemp = parseFloat(currentTempElem.textContent);
+            let maxTemp = parseFloat(maxTempElem.textContent);
+            let minTemp = parseFloat(minTempElem.textContent);
+    
+            if (celsius) {
+                currentTempElem.textContent = `${currentTemp}°C`;
+                maxTempElem.textContent = `${maxTemp}°C`;
+                minTempElem.textContent = `${minTemp}°C`;
+                document.getElementById('toggleUnitButton').textContent = 'Switch to Fahrenheit';
+            } else {
+                currentTemp = (currentTemp * 9 / 5) + 32;
+                maxTemp = (maxTemp * 9 / 5) + 32;
+                minTemp = (minTemp * 9 / 5) + 32;
+                currentTempElem.textContent = `${currentTemp.toFixed(1)}°F`;
+                maxTempElem.textContent = `${maxTemp.toFixed(1)}°F`;
+                minTempElem.textContent = `${minTemp.toFixed(1)}°F`;
+                document.getElementById('toggleUnitButton').textContent = 'Switch to Celsius';
+            }
+        }
+    
+        function fetchSchedules() {
+            fetch(`${baseUrl}/schedules`)
+                .then(response => response.json())
+                .then(data => {
+                    const tableBody = document.getElementById('scheduleTable').getElementsByTagName('tbody')[0];
+                    tableBody.innerHTML = ''; // Clear existing rows
+                    data.forEach(schedule => {
+                        const newRow = tableBody.insertRow();
+                        newRow.insertCell(0).textContent = schedule.schedule_id;
+                        newRow.insertCell(1).textContent = schedule.start_time;
+                        newRow.insertCell(2).textContent = schedule.min_temp;
+                        newRow.insertCell(3).textContent = schedule.max_temp;
+                    });
+                })
+                .catch(error => console.error('Error fetching schedules:', error));
+        }
+    
+        function updateTemperatureValues() {
+            fetch(`${baseUrl}/get_temp/`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('currentTemperatureText').textContent = `${data.temperature}°${celsius ? 'C' : 'F'}`;
+                })
+                .catch(error => console.error('Error fetching current temperature:', error));
+    
+            fetch(`${baseUrl}/get_max/`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('maxTemperatureText').textContent = `${data.max_temp}°${celsius ? 'C' : 'F'}`;
+                })
+                .catch(error => console.error('Error fetching max temperature:', error));
+    
+            fetch(`${baseUrl}/get_min/`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('minTemperatureText').textContent = `${data.min_temp}°${celsius ? 'C' : 'F'}`;
+                })
+                .catch(error => console.error('Error fetching min temperature:', error));
+        }
+    
+        document.getElementById('toggleUnitButton').addEventListener('click', function() {
+            celsius = !celsius;
+            updateTemperatureDisplay();
+        });
+    
+        document.getElementById('setTemperaturesButton').addEventListener('click', function() {
+            const minTemp = document.getElementById('minTemperatureText').textContent;
+            const maxTemp = document.getElementById('maxTemperatureText').textContent;
+    
+            fetch(`${baseUrl}/set_temps/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    min_temp: parseFloat(minTemp),
+                    max_temp: parseFloat(maxTemp)
+                })
+            })
+            .then(response => response.json())
+            .then(data => console.log('Set temperatures response:', data))
+            .catch(error => console.error('Error setting temperatures:', error));
+        });
+    
+        document.getElementById('toggleFanButton').addEventListener('click', function() {
+            fetch(`${baseUrl}/toggle_fan/`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => console.log('Toggle fan response:', data))
+            .catch(error => console.error('Error toggling fan:', error));
+        });
+    
+        document.getElementById('saveButton').addEventListener('click', function() {
+            const startTime = document.getElementById('startTime').value;
+            const minTemp = document.getElementById('minTemp').value;
+            const maxTemp = document.getElementById('maxTemp').value;
+    
+            const scheduleId = `ID-${Math.floor(Math.random() * 10000)}`;
+    
+            if (startTime && minTemp && maxTemp) {
+                fetch(`${baseUrl}/schedules`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        schedule_id: scheduleId,
+                        start_time: startTime,
+                        min_temp: minTemp,
+                        max_temp: maxTemp
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Save schedule response:', data);
+                    fetchSchedules(); // Refresh the schedule table
+                })
+                .catch(error => console.error('Error saving schedule:', error));
+            } else {
+                alert('Please fill in all fields.');
+            }
+        });
+    
+        document.getElementById('removeButton').addEventListener('click', function() {
+            const removeScheduleId = document.getElementById('removeScheduleId').value;
+    
+            if (removeScheduleId) {
+                fetch(`${baseUrl}/schedules/${removeScheduleId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Remove schedule response:', data);
+                    fetchSchedules(); // Refresh the schedule table
+                })
+                .catch(error => console.error('Error removing schedule:', error));
+            }
+        });
+    
+        // Initialize by fetching schedules and temperature values
+        fetchSchedules();
+        updateTemperatureValues();
+    </script>    
+</body>
+</html>
