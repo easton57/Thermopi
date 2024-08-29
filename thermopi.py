@@ -18,7 +18,7 @@ celsius = False
 
 @app.route('/')
 def index():
-    return render_template('html/index.html', title='ThermoPi')
+    return render_template('index.html', title='ThermoPi')
 
 
 def write_schedule_to_csv(schedule_id, start_time, min_temp, max_temp):
