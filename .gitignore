@@ -1,0 +1,10 @@
+.idea
+.venv
+venv
+__pycache__
+.trunk
+.idea
+.DS_Store
+.bowerrc
+package*.json
+bower.json
